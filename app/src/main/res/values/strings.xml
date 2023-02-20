@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ServicesApp</string>
+    <string name="logo_of_service">Logo of service</string>
+    <string name="projects_of_VK">Проекты ВК</string>
+</resources>
