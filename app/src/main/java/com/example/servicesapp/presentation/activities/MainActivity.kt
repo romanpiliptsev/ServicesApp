@@ -1,20 +1,16 @@
 package com.example.servicesapp.presentation.activities
 
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import androidx.lifecycle.ViewModelProvider
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.servicesapp.MyApp
-import com.example.servicesapp.data.network.model.ServiceDto
+import com.example.servicesapp.ServiceApp
 import com.example.servicesapp.databinding.ActivityMainBinding
+import com.example.servicesapp.domain.entities.ServiceInfo
 import com.example.servicesapp.presentation.adapters.ServicesAdapter
 import com.example.servicesapp.presentation.viewmodels.MainViewModel
 import com.example.servicesapp.presentation.viewmodels.ViewModelFactory
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
@@ -22,8 +18,8 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
-    private val vm by lazy {
-        ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
+    private val vm: MainViewModel by viewModels {
+        viewModelFactory
     }
 
     private val binding by lazy {
@@ -35,10 +31,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val component by lazy {
-        (application as MyApp).component
+        (application as ServiceApp).component
     }
 
-    private var list: List<ServiceDto> = listOf()
+    private var list: List<ServiceInfo> = listOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         component.inject(this)
@@ -48,20 +44,45 @@ class MainActivity : AppCompatActivity() {
 
         val adapter = ServicesAdapter()
         rvServices.adapter = adapter
-        rvServices.layoutManager = LinearLayoutManager(this@MainActivity)
+        rvServices.layoutManager = LinearLayoutManager(this)
 
-        CoroutineScope(Dispatchers.Main).launch {
-            vm.getServiceList().observe(this@MainActivity) {
-                adapter.services = it
-                list = it
+        vm.getServiceList()
+
+        vm.getServiceListStateLiveData.observe(this) {
+            when (it) {
+                is MainViewModel.GetServiceListState.Error -> {
+                    with(binding) {
+                        rvServices.visibility = View.GONE
+                        progressBar.visibility = View.GONE
+                        errorGroup.visibility = View.VISIBLE
+                    }
+                }
+                is MainViewModel.GetServiceListState.Loaded -> {
+                    with(binding) {
+                        rvServices.visibility = View.VISIBLE
+                        progressBar.visibility = View.GONE
+                        errorGroup.visibility = View.GONE
+                    }
+                    adapter.submitList(it.serviceList)
+                    list = it.serviceList
+                }
+                is MainViewModel.GetServiceListState.Loading -> {
+                    with(binding) {
+                        rvServices.visibility = View.GONE
+                        progressBar.visibility = View.VISIBLE
+                        errorGroup.visibility = View.GONE
+                    }
+                }
             }
         }
     }
 
     fun launchServiceActivity(view: View) {
         val serviceName = list[rvServices.indexOfChild(view)].name
-        val intent = Intent(this, ServiceActivity::class.java)
-        intent.putExtra("serviceName", serviceName)
-        startActivity(intent)
+        startActivity(ServiceActivity.newIntent(this, serviceName))
+    }
+
+    fun retryDownload(view: View) {
+        vm.getServiceList()
     }
 }

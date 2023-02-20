@@ -4,7 +4,7 @@ import android.app.Application
 import com.example.servicesapp.di.ApplicationComponent
 import com.example.servicesapp.di.DaggerApplicationComponent
 
-class MyApp: Application() {
+class ServiceApp : Application() {
     val component: ApplicationComponent by lazy {
         DaggerApplicationComponent.builder()
             .build()

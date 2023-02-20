@@ -1,44 +1,47 @@
 package com.example.servicesapp.presentation.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.servicesapp.R
-import com.example.servicesapp.data.network.model.ServiceDto
+import com.example.servicesapp.databinding.ServiceBinding
+import com.example.servicesapp.domain.entities.ServiceInfo
 import com.squareup.picasso.Picasso
 
-class ServicesAdapter : RecyclerView.Adapter<ServicesAdapter.ServiceViewHolder>() {
-
-    var services: List<ServiceDto> = listOf()
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
+class ServicesAdapter :
+    ListAdapter<ServiceInfo, ServicesAdapter.ServiceViewHolder>(DiffCallback()) {
 
     override fun getItemCount(): Int {
-        return services.size
+        return currentList.size
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ServiceViewHolder {
-        val view: View = LayoutInflater.from(parent.context)
-            .inflate(R.layout.service, parent, false)
-
+        val view = ServiceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ServiceViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ServiceViewHolder, position: Int) {
-        val serviceItem = services[position]
-
-        holder.name.text = serviceItem.name
-        Picasso.get().load(serviceItem.iconUrl).placeholder(R.drawable.ic_launcher_background)
-            .into(holder.logo)
+        holder.bind(getItem(position))
     }
 
-    class ServiceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val name: TextView = view.findViewById(R.id.service_name)
-        val logo: ImageView = view.findViewById(R.id.service_logo)
+    class ServiceViewHolder(private val binding: ServiceBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(serviceItem: ServiceInfo) = with(binding) {
+            serviceName.text = serviceItem.name
+            Picasso.get().load(serviceItem.iconUrl).placeholder(R.drawable.ic_launcher_background)
+                .into(serviceLogo)
+        }
+    }
+
+    private class DiffCallback : DiffUtil.ItemCallback<ServiceInfo>() {
+        override fun areItemsTheSame(oldItem: ServiceInfo, newItem: ServiceInfo): Boolean {
+            return oldItem == newItem
+        }
+
+        override fun areContentsTheSame(oldItem: ServiceInfo, newItem: ServiceInfo): Boolean {
+            return oldItem == newItem
+        }
     }
 }

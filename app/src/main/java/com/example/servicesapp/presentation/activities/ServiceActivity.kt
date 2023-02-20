@@ -1,21 +1,19 @@
 package com.example.servicesapp.presentation.activities
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
-import androidx.lifecycle.ViewModelProvider
-import com.example.servicesapp.MyApp
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import com.example.servicesapp.R
+import com.example.servicesapp.ServiceApp
 import com.example.servicesapp.databinding.ActivityServiceBinding
-import com.example.servicesapp.presentation.viewmodels.MainViewModel
+import com.example.servicesapp.presentation.viewmodels.ServiceViewModel
 import com.example.servicesapp.presentation.viewmodels.ViewModelFactory
 import com.squareup.picasso.Picasso
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class ServiceActivity : AppCompatActivity() {
@@ -23,8 +21,8 @@ class ServiceActivity : AppCompatActivity() {
     @Inject
     lateinit var viewModelFactory: ViewModelFactory
 
-    private val vm by lazy {
-        ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
+    private val vm: ServiceViewModel by viewModels {
+        viewModelFactory
     }
 
     private val binding by lazy {
@@ -32,7 +30,7 @@ class ServiceActivity : AppCompatActivity() {
     }
 
     private val component by lazy {
-        (application as MyApp).component
+        (application as ServiceApp).component
     }
 
     private lateinit var serviceName: String
@@ -43,20 +41,45 @@ class ServiceActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        serviceName = intent.getStringExtra("serviceName") ?: throw Exception()
+        serviceName = intent.getStringExtra(EXTRA_SERVICE_NAME) ?: ""
 
-        CoroutineScope(Dispatchers.Main).launch {
-            val service = vm.getService(serviceName)
+        vm.getService(serviceName)
 
-            with(binding) {
-                name.text = service.name
-                description.text = service.description
-                link.text = service.serviceUrl
-                Picasso.get().load(service.iconUrl).placeholder(R.drawable.ic_launcher_background)
-                    .into(logo)
+        vm.getServiceStateLiveData.observe(this) {
+            when (it) {
+                is ServiceViewModel.GetServiceState.Error -> {
+                    with(binding) {
+                        okGroup.visibility = View.GONE
+                        progressBar.visibility = View.GONE
+                        errorGroup.visibility = View.VISIBLE
+                    }
+                }
+                is ServiceViewModel.GetServiceState.Loaded -> {
+                    with(binding) {
+                        okGroup.visibility = View.VISIBLE
+                        progressBar.visibility = View.GONE
+                        errorGroup.visibility = View.GONE
+
+                        val service = it.service
+                        name.text = service.name
+                        description.text = service.description
+                        link.text = service.serviceUrl
+                        Picasso.get().load(service.iconUrl)
+                            .placeholder(R.drawable.ic_launcher_background)
+                            .into(logo)
+                    }
+
+                }
+                is ServiceViewModel.GetServiceState.Loading -> {
+                    with(binding) {
+                        okGroup.visibility = View.GONE
+                        progressBar.visibility = View.VISIBLE
+                        errorGroup.visibility = View.GONE
+                    }
+
+                }
             }
         }
-
         setupActionBar()
     }
 
@@ -66,8 +89,17 @@ class ServiceActivity : AppCompatActivity() {
         actionBar?.title = serviceName
     }
 
-    fun followLink(view: View) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse((view as TextView).text.toString()))
-        startActivity(intent)
+    fun retryDownload(view: View) {
+        vm.getService(serviceName)
+    }
+
+    companion object {
+        private const val EXTRA_SERVICE_NAME = "serviceName"
+
+        fun newIntent(context: Context, serviceName: String?): Intent {
+            val intent = Intent(context, ServiceActivity::class.java)
+            intent.putExtra(EXTRA_SERVICE_NAME, serviceName)
+            return intent
+        }
     }
 }

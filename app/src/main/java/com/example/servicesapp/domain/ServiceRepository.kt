@@ -1,11 +1,10 @@
 package com.example.servicesapp.domain
 
-import androidx.lifecycle.LiveData
-import com.example.servicesapp.data.network.model.ServiceDto
+import com.example.servicesapp.domain.entities.ServiceInfo
 
 interface ServiceRepository {
 
-    suspend fun getServiceList(): LiveData<List<ServiceDto>>
+    suspend fun getServiceList(): List<ServiceInfo>
 
-    suspend fun getService(name: String): ServiceDto
+    suspend fun getService(name: String): ServiceInfo
 }

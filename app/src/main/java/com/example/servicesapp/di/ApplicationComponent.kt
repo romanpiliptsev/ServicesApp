@@ -5,9 +5,8 @@ import com.example.servicesapp.presentation.activities.ServiceActivity
 import dagger.Component
 
 @ApplicationScope
-@Component(modules = [Module::class])
+@Component(modules = [Module::class, ViewModelModule::class])
 interface ApplicationComponent {
-
     fun inject(activity: MainActivity)
 
     fun inject(activity: ServiceActivity)

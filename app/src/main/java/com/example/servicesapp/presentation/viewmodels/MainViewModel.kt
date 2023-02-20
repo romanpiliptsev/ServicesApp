@@ -1,22 +1,39 @@
 package com.example.servicesapp.presentation.viewmodels
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.servicesapp.data.network.model.ServiceDto
-import com.example.servicesapp.domain.GetServiceListUseCase
-import com.example.servicesapp.domain.GetServiceUseCase
+import androidx.lifecycle.viewModelScope
+import com.example.servicesapp.domain.entities.ServiceInfo
+import com.example.servicesapp.domain.usecases.GetServiceListUseCase
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
-    private val getServiceUseCase: GetServiceUseCase,
     private val getServiceListUseCase: GetServiceListUseCase
 ) : ViewModel() {
 
-    suspend fun getService(name: String): ServiceDto {
-        return getServiceUseCase.invoke(name)
+    private val _getServiceListStateLiveData = MutableLiveData<GetServiceListState>()
+    val getServiceListStateLiveData: LiveData<GetServiceListState>
+        get() = _getServiceListStateLiveData
+
+    sealed interface GetServiceListState {
+        object Error : GetServiceListState
+        object Loading : GetServiceListState
+        class Loaded(val serviceList: List<ServiceInfo>) : GetServiceListState
     }
 
-    suspend fun getServiceList(): LiveData<List<ServiceDto>> {
-        return getServiceListUseCase.invoke()
+    private val getServiceListHandler = CoroutineExceptionHandler { _, exception ->
+        _getServiceListStateLiveData.value = GetServiceListState.Error
+    }
+
+    fun getServiceList() {
+        _getServiceListStateLiveData.value = GetServiceListState.Loading
+
+        viewModelScope.launch(getServiceListHandler) {
+            val list = getServiceListUseCase.invoke()
+            _getServiceListStateLiveData.value = GetServiceListState.Loaded(list)
+        }
     }
 }

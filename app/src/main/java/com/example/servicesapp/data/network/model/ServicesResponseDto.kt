@@ -1,10 +1,5 @@
 package com.example.servicesapp.data.network.model
 
-import com.google.gson.annotations.Expose
-import com.google.gson.annotations.SerializedName
-
-data class ServicesResponseDto (
-    @SerializedName("items")
-    @Expose
+data class ServicesResponseDto(
     val items: List<ServiceDto>? = null
 )
