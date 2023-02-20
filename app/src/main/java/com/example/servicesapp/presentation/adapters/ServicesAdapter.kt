@@ -30,7 +30,7 @@ class ServicesAdapter :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(serviceItem: ServiceInfo) = with(binding) {
             serviceName.text = serviceItem.name
-            Picasso.get().load(serviceItem.iconUrl).placeholder(R.drawable.ic_launcher_background)
+            Picasso.get().load(serviceItem.iconUrl).placeholder(R.drawable.ic_launcher_foreground)
                 .into(serviceLogo)
         }
     }
